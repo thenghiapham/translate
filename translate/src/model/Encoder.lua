@@ -64,5 +64,5 @@ function Encoder:forward(input_sequence)
         context_lists[2][backward_t] = bst[#bst]
     end
     
-    -- merge the context vector lists into a context matrix
+    -- TODO: merge the context vector lists into a context matrix
 end

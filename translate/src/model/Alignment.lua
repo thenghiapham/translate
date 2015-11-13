@@ -17,15 +17,15 @@ function Alignment.align_model(state_size, context_size, tmp_output_size, dropou
   local prev_state = inputs[1]
   local context_mat = inputs[2]
   
-  -- attempt to use the above module, if doesn't work, just copy & paste, should be short
+  -- M1 = tanh(W1 state + (W2 s) \outer (1))
   local linearAttention = nn.LinearAttention(state_size, context_size, tmp_output_size)({prev_state, context_mat})
   local tanhAttention = nn.Tanh()(linearAttention)
+  -- a =softmax(w * M1) 
   local flatAttention = nn.FlatWeight(tmp_output_size)(tanhAttention)
   local attentionWeight = nn.SoftMax()(flatAttention)
   
-  --- todo weighted application
+  --- c_v = M1 * a
   local context_vector = nn.MVMul()({context_mat, attentionWeight})
-
 
   table.insert(outputs, context_vector)
   return nn.gModule(inputs, outputs)

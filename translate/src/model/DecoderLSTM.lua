@@ -1,10 +1,13 @@
 
 local DecoderLSTM = {}
 
---
-function DecoderLSTM.lstm(rnn_size, n, dropout, use_batch)
-  -- TODO: try to put the embedding layers here as parameters
-  -- then clone both forward and backward after flattening
+require 'nn'
+
+----
+--TODO: maybe change Softmax into HierarchicalSoftmax?
+function DecoderLSTM.lstm(rnn_size, dropout, use_batch)
+  ---- use only 1 layer since don't know how to deal with the context vector
+  -- in the 2nd layer
   dropout = dropout or 0 
 
   -- there will be 2*n+1 inputs
@@ -18,8 +21,8 @@ function DecoderLSTM.lstm(rnn_size, n, dropout, use_batch)
   local outputs = {}
   
   -- c,h from previos timesteps
-  local prev_h = inputs[L*2+1]
-  local prev_c = inputs[L*2]
+  local prev_h = inputs[2]
+  local prev_c = inputs[3]
   -- the input to this layer
     x = inputs[1]
   -- evaluate the input sums at once for efficiency
@@ -33,7 +36,6 @@ function DecoderLSTM.lstm(rnn_size, n, dropout, use_batch)
 
   -- batch -> split table (2)
   -- no batch -> split table (1)
-  -- should be consistent somehow
   local n1, n2, n3, n4
   if (use_batch) then
       n1, n2, n3, n4 = nn.SplitTable(2)(reshaped):split(4)
