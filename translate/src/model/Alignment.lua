@@ -21,7 +21,7 @@ function Alignment.align_model(state_size, context_size, tmp_output_size, dropou
   local linearAttention = nn.LinearAttention(state_size, context_size, tmp_output_size)({prev_state, context_mat})
   local tanhAttention = nn.Tanh()(linearAttention)
   -- a =softmax(w * M1) 
-  local flatAttention = nn.FlatWeight(tmp_output_size)(tanhAttention)
+  local flatAttention = nn.FlatLinear(tmp_output_size)(tanhAttention)
   local attentionWeight = nn.SoftMax()(flatAttention)
   
   --- c_v = M1 * a

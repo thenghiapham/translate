@@ -6,7 +6,7 @@ function Embedding.create(lookup_table)
     local self = {}
     setmetatable(self, Embedding)
     self.lookup_table = lookup_table
-
+    return self
 end
 
 function Embedding:tensorize(index)
@@ -33,3 +33,9 @@ function Embedding:backward(input, doutput)
     end
     self.lookup_table:backward(input, doutput)
 end
+
+function Embedding:training()
+    self.lookup_table:training()
+end
+
+return Embedding

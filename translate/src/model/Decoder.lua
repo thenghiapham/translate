@@ -2,6 +2,8 @@ local Decoder = {}
 
 Decoder.__index = Decoder
 
+require 'util.misc'
+
 function Decoder.create(opt, embeddings, aligned_rnns, criteria, init_state)
     local self = {}
     setmetatable(self, Decoder)
@@ -12,6 +14,7 @@ function Decoder.create(opt, embeddings, aligned_rnns, criteria, init_state)
     self.criteria = criteria
     self.init_state = init_state
     
+    self.d_word_vectors = {}
     for t = 1,opt.max_seq_length do
         if (opt.use_batch) then
             self.d_word_vectors[t] = torch.zeros(opt.batch_size, opt.rnn_size)
@@ -34,14 +37,13 @@ function Decoder:forward(input_sequence, context_matrix, output_sequence)
     ---- assuming input_sequence and output_sequence are more or less the same
     -- but shifted by one word
     local opt = self.opt
-    local seq_length = input_sequence.size(1)
+    local seq_length = input_sequence:size(1)
     local max_seq_length = opt.max_seq_length
     if (max_seq_length < seq_length) then
         error("input sequence is longer than maximum length %d", max_seq_length)
     end
     
     self.states = {[0] = self.init_state}
-    local predictions = {}           
     local loss = 0
     
     self.word_vectors = {}
@@ -61,12 +63,13 @@ function Decoder:forward(input_sequence, context_matrix, output_sequence)
         self.aligned_rnns[t]:training() 
         local rst = self.aligned_rnns[t]:forward{self.word_vectors[t], context_matrix, unpack(self.states[t-1])}
         
+        self.states[t] = {}
         for i=1,#self.init_state do
             table.insert(self.states[t], rst[i])
         end -- extract the state, without output
         
-        predictions[t] = rst[#rst]
-        loss = loss + self.criteria[t]:forward(predictions[t], output_sequence[t])
+        self.predictions[t] = rst[#rst]
+        loss = loss + self.criteria[t]:forward(self.predictions[t], output_sequence[t])
     end
     
     -- TODO: when do gradient checking, can't average (don-t want to divide gradParmams)
@@ -77,7 +80,7 @@ end
 
 function Decoder:backward(input_sequence, context_matrix, output_sequence)
     local opt = self.opt
-    local seq_length = #input_sequence
+    local seq_length = input_sequence:size(1)
      
     local d_states = {[seq_length] = clone_list(self.init_state, true)} -- true also zeros the clones
     
@@ -85,12 +88,12 @@ function Decoder:backward(input_sequence, context_matrix, output_sequence)
         self.d_word_vectors[t]:zero()
     end
     
-    self.d_context_matrix.resizeAs(context_matrix)
+    self.d_context_matrix:resizeAs(context_matrix)
     self.d_context_matrix:zero()
     
     for t=seq_length,1,-1 do
         -- backprop through loss, and softmax/linear
-        local doutput_t = self.criteria[t]:backward(self.predictions[t], y[{{}, t}])
+        local doutput_t = self.criteria[t]:backward(self.predictions[t], output_sequence[t])
         table.insert(d_states[t], doutput_t)
         local drst = self.aligned_rnns[t]:backward({self.word_vectors[t], unpack(self.states[t-1])}, d_states[t])
         
@@ -106,5 +109,11 @@ function Decoder:backward(input_sequence, context_matrix, output_sequence)
         self.d_word_vectors[t]:add(drst[1])
         self.d_context_matrix:add(drst[2])
     end
+    
+    for t=1,seq_length do
+        self.embeddings[t]:backward(input_sequence[t], self.d_word_vectors[t])
+    end
     return self.d_context_matrix
 end
+
+return Decoder

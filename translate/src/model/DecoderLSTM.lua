@@ -5,7 +5,7 @@ require 'nn'
 
 ----
 --TODO: maybe change Softmax into HierarchicalSoftmax?
-function DecoderLSTM.lstm(rnn_size, dropout, use_batch)
+function DecoderLSTM.lstm(rnn_size, target_vocab_size, dropout, use_batch)
   ---- use only 1 layer since don't know how to deal with the context vector
   -- in the 2nd layer
   dropout = dropout or 0 
@@ -17,20 +17,22 @@ function DecoderLSTM.lstm(rnn_size, dropout, use_batch)
   table.insert(inputs, nn.Identity()()) -- prev_c[L]
   table.insert(inputs, nn.Identity()()) -- prev_h[L]
 
-  local x
+  local x = inputs[1]
+  local context = inputs[2]
   local outputs = {}
   
   -- c,h from previos timesteps
-  local prev_h = inputs[2]
-  local prev_c = inputs[3]
+  local prev_h = inputs[3]
+  local prev_c = inputs[4]
   -- the input to this layer
-    x = inputs[1]
+  
+  
   -- evaluate the input sums at once for efficiency
   local i2h = nn.Linear(rnn_size, 4 * rnn_size)(x)
   -- TODO: change the context size if needed
-  local c2h = nn.Linear(rnn_size * 2, 4 * rnn_size)(x) -- for now say the context is bidirectional
+  local context2h = nn.Linear(rnn_size * 2, 4 * rnn_size)(context) -- for now say the context is bidirectional
   local h2h = nn.Linear(rnn_size, 4 * rnn_size)(prev_h)
-  local all_input_sums = nn.CAddTable()({i2h, c2h, h2h})
+  local all_input_sums = nn.CAddTable()({i2h, context2h, h2h})
 
   local reshaped = nn.Reshape(4, rnn_size)(all_input_sums)
 
@@ -63,7 +65,7 @@ function DecoderLSTM.lstm(rnn_size, dropout, use_batch)
   -- set up the decoder
   local top_h = outputs[#outputs]
   if dropout > 0 then top_h = nn.Dropout(dropout)(top_h) end
-  local proj = nn.Linear(rnn_size, input_size)(top_h)
+  local proj = nn.Linear(rnn_size, target_vocab_size)(top_h)
   local logsoft = nn.LogSoftMax()(proj)
   table.insert(outputs, logsoft)
   return nn.gModule(inputs, outputs)

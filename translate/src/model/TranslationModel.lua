@@ -1,5 +1,3 @@
-require 'util.misc'
-
 local EncoderLSTM = require 'model.EncoderLSTM'
 local JointAlignDecodeLSTM = require 'model.JointAlignDecodeLSTM'
 local Embedding = require 'model.Embedding'
@@ -57,7 +55,7 @@ function TranslationModel.create_model(opt)
     prototype.encoder_backward_rnn = EncoderLSTM.lstm(opt.rnn_size, opt.num_layers, opt.dropout, opt.use_batch)
     
     prototype.target_embedding_layer = nn.LookupTable(opt.target_vocab_size, opt.rnn_size)
-    prototype.decoder_align_rnn = JointAlignDecodeLSTM.lstm(opt.rnn_size, opt.rnn_size * 2, opt.dropout, opt.use_batch)
+    prototype.decoder_align_rnn = JointAlignDecodeLSTM.lstm(opt.rnn_size, opt.rnn_size * 2, opt.target_vocab_size, opt.dropout, opt.use_batch)
     prototype.criterion = nn.ClassNLLCriterion()
     
     if opt.gpuid >= 0 and opt.opencl == 0 then
@@ -81,7 +79,7 @@ function TranslationModel.create_model(opt)
     local source_backward_clones = model_utils.clone_many_times(prototype.encoder_backward_rnn, opt.max_seq_length)
     
     local target_embedding_clones = model_utils.clone_many_times(prototype.target_embedding_layer, opt.max_seq_length)
-    local target_align_clones = model_utils.clone_many_times(prototype.target_embedding_layer, opt.max_seq_length)
+    local target_align_clones = model_utils.clone_many_times(prototype.decoder_align_rnn, opt.max_seq_length)
     local criteria = model_utils.clone_many_times(prototype.criterion, opt.max_seq_length)
     
     
@@ -93,7 +91,9 @@ function TranslationModel.create_model(opt)
     end
     
     local h_source_init_state, h_target_init_state =  TranslationModel.create_init_states(opt)
-    translation_model.encoder = Encoder(opt, source_embeddings, source_forward_clones, source_backward_clones, h_source_init_state)
-    translation_model.decoder = Decoder(opt, target_embeddings, target_align_clones, criteria, h_target_init_state)
+    translation_model.encoder = Encoder.create(opt, source_embeddings, source_forward_clones, source_backward_clones, h_source_init_state)
+    translation_model.decoder = Decoder.create(opt, target_embeddings, target_align_clones, criteria, h_target_init_state)
     return translation_model
 end
+
+return TranslationModel

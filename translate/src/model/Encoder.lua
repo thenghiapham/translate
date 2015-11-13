@@ -1,6 +1,7 @@
 local Encoder = {}
 Encoder.__index = Encoder
 
+require 'util.misc'
 local tensor_utils = require 'util.tensor_utils' 
 
 function Encoder.create(opt, embeddings, forward_rnns, backward_rnns, init_state)
@@ -30,7 +31,7 @@ function Encoder:forward(input_sequence)
     -- of the sequence
     -- return the context matrix
     local opt = self.opt
-    local seq_length = input_sequence.size(1)
+    local seq_length = input_sequence:size(1)
     local max_seq_length = opt.max_seq_length
     if (max_seq_length < seq_length) then
         error("input sequence is longer than maximum length %d", max_seq_length)
@@ -78,14 +79,15 @@ function Encoder:forward(input_sequence)
     end
     
     -- return the context matrix
-    return tensor_utils.merge(context_lists)
+    local merge_matrix = tensor_utils.merge(context_lists)
+    return merge_matrix
 end
 
 function Encoder:backward(input_sequence, d_merge_state)
     -- TODO: cut
     
     local opt = self.opt
-    local seq_length = input_sequence.size(1)
+    local seq_length = input_sequence:size(1)
     local max_seq_length = opt.max_seq_length
     local num_layers = opt.num_layers
     if (max_seq_length < seq_length) then
@@ -97,17 +99,20 @@ function Encoder:backward(input_sequence, d_merge_state)
     end
     -- TODO: cut here
     local d_states = tensor_utils.cut_vectors(d_merge_state, 2)
-    local d_forward_states = d_states[1]
-    local d_backward_states = d_states[2]
+    local d_forward_context = d_states[1]
+    local d_backward_context = d_states[2]
+    
+    local d_forward_states = {[seq_length] = clone_list(self.init_state, true)} -- true also zeros the clones
+    local d_backward_states = {[1] = clone_list(self.init_state, true)} -- true also zeros the clones
     
     for t=seq_length,1,-1 do
         -- backprop through loss, and softmax/linear
         
-        d_forward_states[t][2 * num_layers]:add(d_forward_states[t])
+        d_forward_states[t][2 * num_layers]:add(d_forward_context[t])
         local dfst = self.forward_rnns[t]:backward({self.word_vectors[t], unpack(self.forward_states[t-1])}, d_forward_states[t])
         
         local backward_t = 1 + seq_length - t
-        d_backward_states[backward_t][2 * num_layers]:add(d_backward_states[backward_t])
+        d_backward_states[backward_t][2 * num_layers]:add(d_backward_context[backward_t])
         local dbst = self.backward_rnns[backward_t]:backward({self.word_vectors[backward_t], unpack(self.backward_states[backward_t+1])}, d_backward_states[backward_t])
         -- k = 1, x
         -- k = 2i: dc[i]
@@ -135,6 +140,6 @@ function Encoder:backward(input_sequence, d_merge_state)
     for t=1,seq_length do
         self.embeddings[t]:backward(input_sequence[t], self.d_word_vectors[t])
     end
-    
-
 end
+
+return Encoder

@@ -1,11 +1,11 @@
-local Decoder = require 'model.Decoder'
+local DecoderLSTM = require 'model.DecoderLSTM'
 local Alignment = require 'model.Alignment'
 
 local JointAlignDecodeLSTM = {}
 
 ---- TODO:
 -- 1. if add the criterion in Decoder than change in this as well
-function JointAlignDecodeLSTM.lstm(rnn_size, context_size, dropout, use_batch)
+function JointAlignDecodeLSTM.lstm(rnn_size, context_size, target_vocab_size, dropout, use_batch)
   -- TODO: try to put the embedding layers here as parameters
   -- then clone both forward and backward after flattening
   dropout = dropout or 0 
@@ -24,12 +24,13 @@ function JointAlignDecodeLSTM.lstm(rnn_size, context_size, dropout, use_batch)
   local prev_c = inputs[3]
   local prev_s = inputs[4]
   
-  local context_vector = Alignment.align_model(rnn_size, context_size, rnn_size, dropout)(prev_s, context_mat)
-  local cur_c, cur_s, pred_y = Decoder.lstm(rnn_size, dropout, use_batch)(prev_y, context_vector, prev_c, prev_s)
+  local context_vector = Alignment.align_model(rnn_size, context_size, rnn_size, dropout)({prev_s, context_mat})
+  local cur_c, cur_s, pred_y = DecoderLSTM.lstm(rnn_size, target_vocab_size, dropout, use_batch)({prev_y, context_vector, prev_c, prev_s})
   
   table.insert(outputs, cur_c)
   table.insert(outputs, cur_s)
   table.insert(outputs, pred_y)
+--  table.insert(outputs,context_vector)
   return nn.gModule(inputs, outputs)
 end
 
