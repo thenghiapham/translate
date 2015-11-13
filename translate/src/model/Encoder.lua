@@ -77,7 +77,8 @@ function Encoder:forward(input_sequence)
         context_lists[2][backward_t] = bst[#bst]
     end
     
-    -- TODO: merge the context vector lists into a context matrix
+    -- return the context matrix
+    return tensor_utils.merge(context_lists)
 end
 
 function Encoder:backward(input_sequence, d_merge_state)
@@ -134,5 +135,6 @@ function Encoder:backward(input_sequence, d_merge_state)
     for t=1,seq_length do
         self.embeddings[t]:backward(input_sequence[t], self.d_word_vectors[t])
     end
+    
 
 end
