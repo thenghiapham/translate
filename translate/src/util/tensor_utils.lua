@@ -35,7 +35,8 @@ function tensor_utils.merge(list_of_vector_list)
             new_list[t] = list_of_vector_list[list_index][(t - list_index + 1) / num_list]
         end
         
-        local result = torch.cat(new_list,2)
+        local result = sample_vector:new()
+        result:cat(new_list,2)
         return result:resize(batch_size, seq_size, new_vector_length)
     end
 end
