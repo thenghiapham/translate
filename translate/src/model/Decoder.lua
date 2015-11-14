@@ -15,15 +15,8 @@ function Decoder.create(opt, embeddings, aligned_rnns, criteria, init_state)
     self.init_state = init_state
     
     self.d_word_vectors = {}
-    for t = 1,opt.max_seq_length do
-        if (opt.use_batch) then
-            self.d_word_vectors[t] = torch.zeros(opt.batch_size, opt.rnn_size)
-        else
-            self.d_word_vectors[t] = torch.zeros(opt.rnn_size)
-        end
-    end
     
-    self.d_context_matrix = torch.Tensor()
+    
     return self
 end
 
@@ -85,8 +78,13 @@ function Decoder:backward(input_sequence, context_matrix, output_sequence)
     local d_states = {[seq_length] = clone_list(self.init_state, true)} -- true also zeros the clones
     
     for t=1,seq_length do
+        if not self.d_word_vectors[t] then
+            self.d_word_vectors[t] = self.word_vectors[t]:new()
+        end
         self.d_word_vectors[t]:zero()
     end
+    
+    self.d_context_matrix = self.d_context_matrix or  context_matrix:new()
     
     self.d_context_matrix:resizeAs(context_matrix)
     self.d_context_matrix:zero()

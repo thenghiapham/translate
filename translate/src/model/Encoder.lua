@@ -15,13 +15,6 @@ function Encoder.create(opt, embeddings, forward_rnns, backward_rnns, init_state
     self.init_state = init_state
     
     self.d_word_vectors = {}
-    for t = 1,opt.max_seq_length do
-        if (opt.use_batch) then
-            self.d_word_vectors[t] = torch.zeros(opt.batch_size, opt.rnn_size)
-        else
-            self.d_word_vectors[t] = torch.zeros(opt.rnn_size)
-        end
-    end
     
     return self
 end
@@ -95,6 +88,9 @@ function Encoder:backward(input_sequence, d_merge_state)
     end
     
     for t=1,seq_length do
+        if not self.d_word_vectors[t] then
+            self.d_word_vectors[t] = self.word_vectors[t]:new()
+        end
         self.d_word_vectors[t]:zero()
     end
     -- TODO: cut here

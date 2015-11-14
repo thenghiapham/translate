@@ -80,6 +80,13 @@ function MVMul:updateGradInput(input, gradOutput)
    return self.gradInput
 end
 
+--function MVMul:type(type, tensorCache)
+--    print("enter linear")
+--    parent:type(type, tensorCache)
+--    print("out linear")
+--end
+
+
 function MVMul:__tostring__()
   return torch.type(self) ..
       string.format('(m x n , n --> m)')

@@ -1,8 +1,13 @@
 require 'torch'
 require 'nn'
 require 'nngraph'
+require 'cunn'
+require 'cutorch'
+
 require 'optim'
 require 'util.table_utils'
+
+
 
 local FakeLoader = require 'util.loader_utils'
 local TranslationModel = require 'model.TranslationModel'
@@ -101,5 +106,5 @@ end
 local diff,dC,dC_est = optim.checkgrad(feval, params, 1e-7)
 --eval(params)
 print(diff)
-local merge = torch.cat({dC, dC_est},2)
+local merge = dC:cat(dC_est,2)
 print(merge)

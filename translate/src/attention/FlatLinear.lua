@@ -63,7 +63,7 @@ end
 function FlatLinear:updateGradInput(input, gradOutput)
    
    if input:dim() == 2 then
-      local tmp = torch.Tensor(gradOutput:size(1))
+      local tmp = gradOutput:new()
       tmp:copy(gradOutput)
       tmp:resize(1,gradOutput:size(1))
       self.gradInput:resizeAs(input)
@@ -92,7 +92,7 @@ function FlatLinear:accGradParameters(input, gradOutput, scale)
    scale = scale or 1
    -- TODO: fix this, don't rotate input?
    if input:dim() == 2 then
-      local tmp = torch.Tensor(gradOutput:size(1))
+      local tmp = gradOutput:new()
       tmp:copy(gradOutput)
       tmp:resize(1,gradOutput:size(1))
       self.gradWeight:addmm(scale, tmp, input:t())
@@ -115,6 +115,11 @@ end
 -- we do not need to accumulate parameters when sharing
 FlatLinear.sharedAccUpdateGradParameters = FlatLinear.accUpdateGradParameters
 
+--function FlatLinear:type(type, tensorCache)
+--    print("enter linear")
+--    parent:type(type, tensorCache)
+--    print("out linear")
+--end
 
 function FlatLinear:__tostring__()
   return torch.type(self) ..

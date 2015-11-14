@@ -46,7 +46,6 @@ function LinearAttention:updateOutput(input)
    self.output:zero()
    local factor = input[1]
    local attentee = input[2]
-   
    if attentee:dim() == 2 and factor:dim() == 1 then
       local nframe = attentee:size(2)
       local nElement = self.output:nElement()
@@ -57,7 +56,9 @@ function LinearAttention:updateOutput(input)
       end
       local factorShare = torch.mv(self.weightFactor,factor)
       self.output:addmm(self.weightAttentee, attentee) 
-      self.output:addr(factorShare, torch.Tensor(attentee:size(2)):fill(1)) -- add all element 
+      
+      local one_vector = factorShare:new():resize(attentee:size(2)):fill(1)
+      self.output:addr(factorShare, one_vector) -- add all element 
    elseif attentee:dim() == 3 and factor:dim() == 2 then
       --[[ In this case, the sequences must have the same lengths because the
         batch operation put everything into a cube
@@ -164,6 +165,11 @@ end
 -- we do not need to accumulate parameters when sharing
 LinearAttention.sharedAccUpdateGradParameters = LinearAttention.accUpdateGradParameters
 
+--function LinearAttention:type(type, tensorCache)
+--    print("enter linear")
+--    parent:type(type, tensorCache)
+--    print("out linear")
+--end
 
 function LinearAttention:__tostring__()
   return torch.type(self) ..
