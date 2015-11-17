@@ -26,7 +26,13 @@ end
 
 function Vocab.create_dictionary(text_file)
     local dict = {}
+    local line_num = 0
     for line in io.lines(text_file) do
+        line_num = line_num + 1
+        if (line_num % 10000 == 0) then
+            print(line_num)
+        end
+        line = line:lower()
         for word in string.gmatch(line, "%S+") do
              if (dict[word]) then
                  dict[word] = dict[word] + 1
@@ -49,12 +55,24 @@ function Vocab.filter(dict, minimum_count)
     return new_dict
 end
 
+function Vocab.top(dict, n)
+    local top_dict = {}
+    local num = 1
+    for k,v in sorted_pairs(dict) do
+        top_dict[k] = v
+        if (num == n) then
+            break
+        end
+        num = num + 1
+    end
+    return top_dict
+end
+
 function Vocab.save(dict, filename)
     local file = io.open(filename,'w+')
     for k,v in sorted_pairs(dict) do
         file:write(k .. "\t" .. v .. "\n")    
     end
-    
     file:close()
 end
 
@@ -70,8 +88,10 @@ end
 
 function Vocab.word2index(dict)
     local w2i = {}
+    local index = 1
     for k in sorted_pairs(dict) do
-        w2i[k] = #w2i+1    
+        w2i[k] = index
+        index = index + 1    
     end
     return w2i
 end
@@ -83,9 +103,5 @@ function Vocab.index2word(dict)
     end
     return i2w
 end
---local dict = Vocab.create_dictionary("/home/nghia/test_io_lua.txt")
---local filtered_dict = Vocab.filter(dict,2)
---Vocab.save(filtered_dict, "/home/nghia/test_dict.out")
 
---local dict = Vocab.load("/home/nghia/test_dict.out")
---Vocab.save(dict, "/home/nghia/test_dict1.out")
+return Vocab
