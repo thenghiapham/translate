@@ -24,10 +24,12 @@ function DictMapper(input_file, dict_file, output_file)
     for line in io.lines(input_file) do
         local indices = {}
         for word in string.gmatch(line, "%S+") do
-             table.insert(indices, word2index[word])
+             local index = word2index[word]
+             if not index then
+                 index = 0
+             end
         end
         out_stream.write(strjoin(" ",indices))
         out_stream.write("\n")
     end 
-
 end
