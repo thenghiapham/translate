@@ -15,3 +15,4 @@ function FakeLoader:next_batch()
 end
 
 return FakeLoader
+
