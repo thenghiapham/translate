@@ -112,11 +112,10 @@ function Vocab.size(dict)
     return num
 end
 
-function Vocab.create_mapping(dict, no_clusters, no_extra_words, dict_size)
+function Vocab.create_mapping(dict_size, no_clusters)
     dict_size = dict_size or Vocab.size(dict)
-    local total_num = dict_size + no_extra_words
-    local mod = total_num % no_clusters
-    local cluster_size = (total_num - mod) / no_clusters
+    local mod = dict_size % no_clusters
+    local cluster_size = (dict_size - mod) / no_clusters
     
     local split_point = mod * (cluster_size + 1)
     local mapping = {}
@@ -126,7 +125,7 @@ function Vocab.create_mapping(dict, no_clusters, no_extra_words, dict_size)
         local indices = {cluster_index, in_cluster_index}
         table.insert(mapping,indices)
     end
-    for t = split_point + 1, total_num do
+    for t = split_point + 1, dict_size do
         local in_cluster_index = (t - split_point - 1) % cluster_size + 1
         local cluster_index = (t - split_point - in_cluster_index) / cluster_size + 1 + mod
         local indices = {cluster_index, in_cluster_index}

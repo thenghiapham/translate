@@ -25,6 +25,8 @@ cmd:option('-target_vocab_size',10002,'number of words in the target vocab')
 cmd:option('-rnn_size', 50, 'size of LSTM internal state')
 cmd:option('-num_layers', 1, 'number of layers in the LSTM')
 -- optimization
+cmd:option('-use_hsm',1,'hierarchial softmax. 0 = use normal softmax. 1 = use hsm in fbcunn')
+cmd:option('-cluster_count',100,'number of clusters used for hsm')
 cmd:option('-learning_rate',2e-3,'learning rate')
 cmd:option('-learning_rate_decay',0.97,'learning rate decay')
 cmd:option('-learning_rate_decay_after',10,'in number of epochs, when to start decaying the learning rate')
@@ -96,7 +98,6 @@ local function feval(x)
     grad_params:clamp(-opt.grad_clip, opt.grad_clip)
     return loss, grad_params
 end
-
 
 local function main()
     local profiler = newProfiler()
