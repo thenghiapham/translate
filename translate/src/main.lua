@@ -5,8 +5,11 @@ require 'cunn'
 require 'cutorch'
 require 'fbcunn'
 
+
 require 'optim'
 require 'util.table_utils'
+
+require 'util.pepperfish_profiler'
 
 local cmd = torch.CmdLine()
 cmd:text()
@@ -96,13 +99,16 @@ end
 
 
 local function main()
+    local profiler = newProfiler()
+    profiler:start()
+    
     local train_losses = {}
     local val_losses = {}
     local optim_state = {learningRate = opt.learning_rate, alpha = opt.decay_rate}
     local iterations = opt.max_epochs * loader.ntrain
     local iterations_per_epoch = loader.ntrain
     local loss0 = nil
-    for i = 1, iterations do
+    for i = 1, 100 do
         local epoch = i / loader.ntrain
     
         local timer = torch.Timer()
@@ -161,6 +167,10 @@ local function main()
 --            break -- halt
 --        end
     end
+    profiler:stop()
+    local outfile = io.open( "/home/nghia/translate.prof.txt", "w+" )
+    profiler:report( outfile )
+    outfile:close()
 end
 
 main()
