@@ -18,6 +18,8 @@ function DictMapper.map(input_file, dict_file, output_file)
     local vocab = Vocab.load(dict_file)
     local word2index = Vocab.word2index(vocab)
     local out_stream = io.open(output_file,"w+")
+    local word_num = Vocab.size(vocab)
+    local unknown_word_index = word_num + 1
     -- TODO: unknown word, end of line, start of line? maybe just unknown word
     -- end of line and start of line can be added during training
     local line_num = 0
@@ -31,7 +33,7 @@ function DictMapper.map(input_file, dict_file, output_file)
         for word in string.gmatch(line, "%S+") do
              local index = word2index[word]
              if not index then
-                 index = 0
+                 index = unknown_word_index
              end
              table.insert(indices,index)
         end

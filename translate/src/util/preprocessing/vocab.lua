@@ -104,4 +104,12 @@ function Vocab.index2word(dict)
     return i2w
 end
 
+function Vocab.size(dict)
+    local num = 0
+    for k in pairs(dict) do
+        num = num + 1     
+    end
+    return num
+end
+
 return Vocab

@@ -2,6 +2,7 @@
 local DecoderLSTM = {}
 
 require 'nn'
+require 'fbcunn'
 
 ----
 --TODO: maybe change Softmax into HierarchicalSoftmax?
@@ -67,6 +68,7 @@ function DecoderLSTM.lstm(rnn_size, target_vocab_size, dropout, use_batch)
   if dropout > 0 then top_h = nn.Dropout(dropout)(top_h) end
   local proj = nn.Linear(rnn_size, target_vocab_size)(top_h)
   local logsoft = nn.LogSoftMax()(proj)
+--  local logsoft = nn.HSM()(proj)
   table.insert(outputs, logsoft)
   return nn.gModule(inputs, outputs)
   
