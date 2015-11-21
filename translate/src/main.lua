@@ -42,6 +42,8 @@ cmd:option('-val_frac',0.05,'fraction of data that goes into validation set')
 cmd:option('-init_from', '', 'initialize network parameters from checkpoint at this path')
 -- bookkeeping
 cmd:option('-seed',123,'torch manual random number generator seed')
+cmd:option('-save_every',500,'save the parameter after every "save_every" interations ')
+cmd:option('-check_point_dir',"./checkpoints",'save the parameter after every "save_every" interations ')
 -- GPU/CPU
 cmd:option('-gpuid',0,'which gpu to use. -1 = use CPU')
 cmd:option('-opencl',0,'use OpenCL (instead of CUDA)')
@@ -128,6 +130,21 @@ local function main()
             end
         end
     
+        if i % opt.save_every == 0 or i == iterations then
+            -- evaluate loss on validation data
+            local savefile = string.format('%s/lm_%s_epoch%.2f_%.4f.t7', opt.checkpoint_dir, opt.savefile, epoch, val_loss)
+            print('saving checkpoint to ' .. savefile)
+            local checkpoint = {}
+            checkpoint.protos = protos
+            checkpoint.opt = opt
+            checkpoint.train_losses = train_losses
+            checkpoint.val_loss = val_loss
+            checkpoint.val_losses = val_losses
+            checkpoint.i = i
+            checkpoint.epoch = epoch
+            checkpoint.vocab = loader.vocab_mapping
+            torch.save(savefile, checkpoint)
+        end
 --        -- every now and then or on last iteration
 --        if i % opt.eval_val_every == 0 or i == iterations then
 --            -- evaluate loss on validation data
